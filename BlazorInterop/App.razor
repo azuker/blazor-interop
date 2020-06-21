@@ -1,0 +1,48 @@
+@implements IDisposable
+@inject IJSRuntime JSRuntime
+
+<div>
+    <div class="app-header"><span>Blazor Store Interop Demo</span></div>
+    <div class="micro-header"><span>Product List (Angular):</span></div>
+    <div class="micro-content">
+        <products-list @ref="productListRef" />
+    </div>
+    <div class="micro-header"><span>Product Options (Vue):</span></div>
+    <div class="micro-content">
+        <product-options @ref="productItemRef" />
+    </div>
+</div>
+
+@code{
+    private ElementReference productListRef;
+    private ElementReference productItemRef;
+    private object SelectedProduct { get; set; }
+    private DotNetObjectReference<App> thisRef;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            thisRef = DotNetObjectReference.Create(this);
+
+            JSRuntime.InvokeVoidAsync("interopSamples.subscribeToProductChange",
+                productListRef, thisRef);
+        }
+    }
+
+    [JSInvokable]
+    public void SelectProduct(object p)
+    {
+        SelectedProduct = p;
+        StateHasChanged();
+
+        JSRuntime.InvokeVoidAsync("interopSamples.updateProduct",
+            productItemRef, p);
+    }
+
+    public void Dispose()
+    {
+        thisRef?.Dispose();
+    }
+
+}
